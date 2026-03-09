@@ -12,6 +12,7 @@ Options:
   -b, --build-type TYPE   CMake build type (default: Release)
   -j, --jobs N            Parallel build jobs (default: nproc)
       --clean             Remove ./external/src, ./external/build, and ./external/install first
+      --refresh-sources   Force-fetch requested source refs even if cached locally
       --hypre-tag TAG     hypre git tag/branch (default: v3.1.0)
       --superlu-tag TAG   superlu_dist git tag/branch (default: v9.2.1)
   -h, --help              Show this help text
@@ -27,6 +28,7 @@ INSTALL_DIR="${EXTERNAL_DIR}/install"
 BUILD_TYPE="Release"
 JOBS="$(nproc)"
 DO_CLEAN=0
+FORCE_REFRESH=0
 
 HYPRE_REPO_URL="https://github.com/hypre-space/hypre.git"
 HYPRE_TAG="v3.1.0"
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --clean)
       DO_CLEAN=1
+      shift
+      ;;
+    --refresh-sources)
+      FORCE_REFRESH=1
       shift
       ;;
     --hypre-tag)
@@ -109,18 +115,30 @@ clone_or_update_repo() {
   local dirty=0
   local current_commit=""
   local target_commit=""
+  local repo_name=""
+
+  repo_name="$(basename "${dst}")"
 
   if [[ -d "${dst}/.git" ]]; then
     if ! git -C "${dst}" diff --quiet || ! git -C "${dst}" diff --cached --quiet; then
       dirty=1
     fi
 
-    git -C "${dst}" fetch --tags --prune
-
     current_commit="$(git -C "${dst}" rev-parse HEAD)"
     target_commit="$(git -C "${dst}" rev-parse -q --verify "${tag}^{commit}" || true)"
 
+    if [[ ${FORCE_REFRESH} -eq 1 ]]; then
+      echo "==> Refreshing ${repo_name} ref ${tag}"
+      git -C "${dst}" fetch --depth 1 origin "${tag}"
+      target_commit="$(git -C "${dst}" rev-parse FETCH_HEAD)"
+    elif [[ -z "${target_commit}" ]]; then
+      echo "==> Fetching ${repo_name} ref ${tag}"
+      git -C "${dst}" fetch --depth 1 origin "${tag}"
+      target_commit="$(git -C "${dst}" rev-parse FETCH_HEAD)"
+    fi
+
     if [[ -n "${target_commit}" && "${current_commit}" == "${target_commit}" ]]; then
+      echo "==> Using cached ${repo_name} ref ${tag}"
       return 0
     fi
 
@@ -130,9 +148,9 @@ clone_or_update_repo() {
       return 1
     fi
 
-    git -C "${dst}" checkout "${tag}"
-    git -C "${dst}" pull --ff-only || true
+    git -C "${dst}" checkout --detach "${target_commit}"
   else
+    echo "==> Cloning ${repo_name} ref ${tag}"
     git clone --branch "${tag}" --depth 1 "${url}" "${dst}"
   fi
 }

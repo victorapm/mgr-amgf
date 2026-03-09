@@ -67,6 +67,7 @@ Common options:
 - `--build-type <Release|Debug|RelWithDebInfo|...>` (default: `Release`)
 - `--jobs <N>`
 - `--clean` (removes `external/src`, `external/build`, and `external/install` first)
+- `--refresh-sources` (force-fetches requested git refs even if already cached)
 - `--hypre-tag <tag>` (default: `v3.1.0`)
 - `--superlu-tag <tag>` (default: `v9.2.1`)
 
