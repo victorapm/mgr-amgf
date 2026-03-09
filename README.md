@@ -134,7 +134,29 @@ If `--x0-prefix` is omitted, the initial guess is set to zero.
 
 ## Verified baseline run
 
-On the included sample (`test/blocks-unsym-ls_00001`) with `-np 1`, the current build converges in GMRES with final relative residual near `5.7e-09` (31 iterations, tolerance `1e-8`).
+Command:
+
+```bash
+mpirun -np 1 ./external/build/mgr_driver/mgr_driver --print-level 0 --mgr-print-level 0
+```
+
+Full output:
+
+```text
+============================================================
+AMGF-MGR Driver: Matrix Summary
+  MPI tasks: 1
+  Matrix source: test/blocks-unsym-ls_00001/IJ.out.A
+  Global size: 1590 x 1590
+  Global nonzeros: 121806
+  Rank 0 local row range: [0, 1589] (1590 rows)
+  Rank 0 local col range: [0, 1589] (1590 cols)
+  Constraints (dofmap==1): rank0 local=462, global=462
+============================================================
+GMRES converged.
+  Iterations: 25
+  Final relative residual norm: 8.7734377970191215e-09
+```
 
 ## Limitations and gaps
 
